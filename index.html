@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Model Viewer</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Click on parts of the 3D model to interact!</div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    let scene, camera, renderer, controls, raycaster, mouse;
+
+    function init() {
+      // Create the scene
+      scene = new THREE.Scene();
+
+      // Set up the camera
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 1, 5); // Adjust camera position as needed
+
+      // Create the renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Add lighting
+      const ambientLight = new THREE.AmbientLight(0x404040, 2);
+      scene.add(ambientLight);
+
+      const pointLight = new THREE.PointLight(0xffffff, 1);
+      pointLight.position.set(10, 10, 10);
+      scene.add(pointLight);
+
+      // OrbitControls for camera interaction
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true; // Smooth movement
+      controls.dampingFactor = 0.05;
+
+      // Raycaster for detecting clicks on objects
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+
+      // Load a 3D model (GLTF/GLB)
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        'https://threejs.org/examples/models/gltf/DamagedHelmet/glTF/DamagedHelmet.gltf', // Use an example model from Three.js repository
+        function (gltf) {
+          const model = gltf.scene;
+          model.scale.set(2, 2, 2); // Adjust scale
+          scene.add(model);
+        },
+        undefined,
+        function (error) {
+          console.error('An error happened while loading the model', error);
+        }
+      );
+
+      // Add event listener for clicks
+      window.addEventListener('click', onClick, false);
+
+      // Animation loop
+      animate();
+    }
+
+    // Handle mouse click
+    function onClick(event) {
+      // Calculate mouse position in normalized device coordinates (-1 to +1)
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      // Update the raycaster
+      raycaster.setFromCamera(mouse, camera);
+
+      // Find intersected objects
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      if (intersects.length > 0) {
+        console.log('Clicked on:', intersects[0].object);
+        alert('You clicked on the model!');
+      }
+    }
+
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    });
+
+    init();
+  </script>
+</body>
+</html>
